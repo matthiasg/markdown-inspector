@@ -8,6 +8,16 @@ CLI tool and library to inspect markdown document structure.
 cargo install --path .
 ```
 
+### Auto-install on version tags (optional)
+
+To automatically build and install to `~/.local/bin` when pushing version tags:
+
+```bash
+export MDI_LOCAL_INSTALL=1
+```
+
+This is opt-in and skipped in CI environments.
+
 ## CLI Usage
 
 ### Show document outline
@@ -44,6 +54,11 @@ mdi read README.md "section 1"
 Show only subsection outline:
 ```bash
 mdi read README.md "section 1" --outline
+```
+
+Show section intro text + subsections as outline:
+```bash
+mdi read README.md "section 1" --summary
 ```
 
 ### Stdin support

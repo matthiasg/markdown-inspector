@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use markdown_inspector::{
-    extract_section, find_section, format_outline_entry, get_section_range, get_subsections,
-    parse_headings,
+    extract_section, extract_section_intro, find_section, format_outline_entry,
+    get_first_subsection, get_section_range, get_subsections, parse_headings,
 };
 use std::fs;
 use std::io::{self, Read};
@@ -38,11 +38,15 @@ enum Commands {
         /// Section to read: line number or heading text (partial match)
         section: String,
 
-        /// Show only the outline of subsections instead of full content
+        /// Show only the heading outline of subsections
         #[arg(short, long)]
         outline: bool,
 
-        /// Maximum heading depth for outline mode (1-6)
+        /// Show section intro text, then subsections as outline
+        #[arg(short, long)]
+        summary: bool,
+
+        /// Maximum heading depth for outline/summary mode (1-6)
         #[arg(short, long, default_value = "6")]
         depth: u8,
     },
@@ -83,6 +87,7 @@ fn main() -> Result<()> {
             file,
             section,
             outline,
+            summary,
             depth,
         } => {
             let content = read_input(&file)?;
@@ -93,7 +98,25 @@ fn main() -> Result<()> {
 
             let (start, end) = get_section_range(&headings, heading);
 
-            if outline {
+            if summary {
+                // Show intro text up to first subsection, then outline of subsections
+                let first_sub = get_first_subsection(&headings, heading);
+                let intro = extract_section_intro(&content, heading, first_sub, end);
+                print!("{}", intro);
+                if !intro.ends_with('\n') {
+                    println!();
+                }
+
+                // Show subsections as outline (skip the section heading itself)
+                if first_sub.is_some() {
+                    println!();
+                    let subsections: Vec<_> = get_subsections(&headings, start, end, depth)
+                        .into_iter()
+                        .filter(|h| h.line_number > heading.line_number)
+                        .collect();
+                    print_outline(&subsections, depth);
+                }
+            } else if outline {
                 let subsections = get_subsections(&headings, start, end, depth);
                 print_outline(&subsections, depth);
             } else {

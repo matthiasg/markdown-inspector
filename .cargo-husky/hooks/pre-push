@@ -1,0 +1,38 @@
+#!/bin/bash
+# Pre-push hook: build and install mdi locally when pushing version tags
+#
+# Opt-in via: export MDI_LOCAL_INSTALL=1
+# Skipped in CI (when CARGO_HUSKY_DONT_INSTALL_HOOKS or CI is set)
+
+set -e
+
+# Skip in CI environments
+if [ -n "$CI" ] || [ -n "$CARGO_HUSKY_DONT_INSTALL_HOOKS" ]; then
+    exit 0
+fi
+
+# Only run if opted in
+if [ "$MDI_LOCAL_INSTALL" != "1" ]; then
+    exit 0
+fi
+
+# Check if we're pushing a version tag
+while read local_ref local_sha remote_ref remote_sha; do
+    if [[ "$local_ref" == refs/tags/v* ]]; then
+        echo "🔨 Version tag detected: ${local_ref#refs/tags/}"
+        echo "   Building release and installing to ~/.local/bin..."
+
+        # Build release
+        cargo build --release
+
+        # Ensure target directory exists
+        mkdir -p "$HOME/.local/bin"
+
+        # Copy binary
+        cp target/release/mdi "$HOME/.local/bin/mdi"
+
+        echo "✅ Installed mdi to ~/.local/bin/mdi"
+    fi
+done
+
+exit 0

@@ -137,6 +137,36 @@ pub fn get_subsections(
         .collect()
 }
 
+/// Get the first subsection within a section (if any)
+pub fn get_first_subsection<'a>(headings: &'a [Heading], heading: &Heading) -> Option<&'a Heading> {
+    let start = heading.line_number;
+    headings
+        .iter()
+        .find(|h| h.line_number > start && h.level > heading.level)
+}
+
+/// Extract section summary: intro text up to first subsection
+///
+/// Returns the text from the section start to the first subsection heading,
+/// or the full section if there are no subsections.
+///
+/// `section_end` is the line number where this section ends (next sibling/parent heading).
+pub fn extract_section_intro(
+    content: &str,
+    heading: &Heading,
+    first_subsection: Option<&Heading>,
+    section_end: Option<usize>,
+) -> String {
+    let lines: Vec<&str> = content.lines().collect();
+    let start_idx = heading.line_number.saturating_sub(1);
+    let end_idx = first_subsection
+        .map(|h| h.line_number.saturating_sub(1))
+        .or(section_end.map(|e| e.saturating_sub(1)))
+        .unwrap_or(lines.len());
+
+    lines[start_idx..end_idx].join("\n")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
