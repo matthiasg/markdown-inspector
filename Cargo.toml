@@ -1,0 +1,19 @@
+[package]
+name = "markdown-inspector"
+version = "0.1.0"
+edition = "2024"
+description = "CLI tool and library to inspect markdown document structure"
+license = "MIT"
+repository = "https://github.com/mgt/markdown-inspector"
+
+[lib]
+name = "markdown_inspector"
+path = "src/lib.rs"
+
+[[bin]]
+name = "mdi"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }

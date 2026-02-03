@@ -1,0 +1,35 @@
+# GitLab CI/CD for markdown-inspector
+#
+# Single-stage pipeline optimized for speed on single runner:
+# - Format check (cargo fmt)
+# - Clippy linting (also compiles)
+# - Tests (includes doctests)
+
+stages:
+  - test
+
+variables:
+  CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
+  CARGO_TARGET_DIR: ${CI_PROJECT_DIR}/target
+  RUSTFLAGS: "-D warnings"
+  CARGO_HUSKY_DONT_INSTALL_HOOKS: "true"
+
+default:
+  image: rust:latest
+
+test:
+  stage: test
+  cache:
+    key:
+      files:
+        - Cargo.lock
+    paths:
+      - .cargo/registry
+      - target/
+    policy: pull-push
+  before_script:
+    - rustup component add rustfmt clippy
+  script:
+    - cargo fmt --check
+    - cargo clippy --all-targets --all-features -- -D warnings
+    - cargo test --all-features
