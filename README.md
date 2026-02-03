@@ -61,6 +61,11 @@ Show section intro text + subsections as outline:
 mdi read README.md "section 1" --summary
 ```
 
+Show full section content with subsections collapsed to outline:
+```bash
+mdi read README.md "section 1" --shallow
+```
+
 ### Stdin support
 
 ```bash

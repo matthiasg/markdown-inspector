@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use markdown_inspector::{
-    extract_section, extract_section_intro, find_section, format_outline_entry,
-    get_first_subsection, get_section_range, get_subsections, parse_headings,
+    extract_section, extract_section_intro, extract_section_shallow, find_section,
+    format_outline_entry, get_first_subsection, get_section_range, get_subsections, parse_headings,
 };
 use std::fs;
 use std::io::{self, Read};
@@ -46,6 +46,10 @@ enum Commands {
         #[arg(short, long)]
         summary: bool,
 
+        /// Show section content with subsections collapsed to outline entries
+        #[arg(long)]
+        shallow: bool,
+
         /// Maximum heading depth for outline/summary mode (1-6)
         #[arg(short, long, default_value = "6")]
         depth: u8,
@@ -88,6 +92,7 @@ fn main() -> Result<()> {
             section,
             outline,
             summary,
+            shallow,
             depth,
         } => {
             let content = read_input(&file)?;
@@ -115,6 +120,13 @@ fn main() -> Result<()> {
                         .filter(|h| h.line_number > heading.line_number)
                         .collect();
                     print_outline(&subsections, depth);
+                }
+            } else if shallow {
+                // Show section content with subsections collapsed to outline entries
+                let section_content = extract_section_shallow(&content, &headings, heading, end);
+                print!("{}", section_content);
+                if !section_content.ends_with('\n') {
+                    println!();
                 }
             } else if outline {
                 let subsections = get_subsections(&headings, start, end, depth);

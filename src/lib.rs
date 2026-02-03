@@ -167,6 +167,72 @@ pub fn extract_section_intro(
     lines[start_idx..end_idx].join("\n")
 }
 
+/// Extract section with subsections collapsed to outline entries
+///
+/// Shows the section's content, but replaces each immediate subsection
+/// with an outline entry (line number + heading text).
+pub fn extract_section_shallow(
+    content: &str,
+    headings: &[Heading],
+    heading: &Heading,
+    section_end: Option<usize>,
+) -> String {
+    let lines: Vec<&str> = content.lines().collect();
+    let start_idx = heading.line_number.saturating_sub(1);
+    let end_idx = section_end
+        .map(|e| e.saturating_sub(1))
+        .unwrap_or(lines.len());
+
+    // Find immediate subsections (one level deeper)
+    let subsections: Vec<&Heading> = headings
+        .iter()
+        .filter(|h| {
+            h.line_number > heading.line_number
+                && section_end.is_none_or(|e| h.line_number < e)
+                && h.level == heading.level + 1
+        })
+        .collect();
+
+    if subsections.is_empty() {
+        // No subsections, return full content
+        return lines[start_idx..end_idx].join("\n");
+    }
+
+    let mut result: Vec<String> = Vec::new();
+    let mut current_line = start_idx;
+
+    for sub in &subsections {
+        let sub_idx = sub.line_number.saturating_sub(1);
+
+        // Add content before this subsection
+        for line in &lines[current_line..sub_idx] {
+            result.push((*line).to_string());
+        }
+
+        // Add outline entry for this subsection
+        result.push(format_outline_entry(sub));
+
+        // Find where this subsection ends (next sibling or section end)
+        let sub_end = headings
+            .iter()
+            .filter(|h| h.line_number > sub.line_number && h.level <= sub.level)
+            .map(|h| h.line_number)
+            .next()
+            .unwrap_or(section_end.unwrap_or(lines.len() + 1));
+
+        current_line = sub_end.saturating_sub(1).min(end_idx);
+    }
+
+    // Add any remaining content after the last subsection
+    if current_line < end_idx {
+        for line in &lines[current_line..end_idx] {
+            result.push((*line).to_string());
+        }
+    }
+
+    result.join("\n")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
